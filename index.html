@@ -4,5 +4,131 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wordle Solver</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
 </head>
+<body>
+    
+    <!-- Header -->
+    <header>
+        <div class="header-inner">
+            <div class="brand">
+                <div class="brand-tiles">
+                    <span class="btile green">W</span>
+                    <span class="btile yellow">S</span>
+                    <span class="btile green">V</span>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">Wordle Solver</span>
+                    <span class="brand-sub">
+                        <span id="word-count">—</span> words ·
+                        <span id="header-mode">loading</span>
+                    </span>
+                </div>
+            </div>
+            <button id="reset-btn" class="btn-ghost">↺ New Wordle</button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+     <main>
+
+        <!-- Left column: grid + input + keyboard -->
+         <section class="col col-left">
+
+            <!-- Status strip -->
+             <div class="status-strip">
+                <span id="remaining-label">Loading word list...</span>
+                <span id="mode-pill" class="pill"></span>
+             </div>
+
+             <!-- 6 row guess history grid -->
+              <div class="guess-grid" id="guess-grid"></div>
+
+              <!-- Current guess input area -->
+               <div class="input-card">
+                <div class="input-row">
+                    <input
+                    id="guess-input" 
+                    type="text"
+                    maxlength="5"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="Enter your guess"
+                    />
+                    <button id="submit-btn" class="btn-primary" disabled>Enter</button>
+                </div>
+
+                <!-- Clickable color tiles -->
+                 <div class="color-tiles" id="color-tiles">
+                    <div class="ctile" data-pos="0" data-color="X"></div>
+                    <div class="ctile" data-pos="1" data-color="X"></div>
+                    <div class="ctile" data-pos="2" data-color="X"></div>
+                    <div class="ctile" data-pos="3" data-color="X"></div>
+                    <div class="ctile" data-pos="4" data-color="X"></div>
+                 </div>
+
+                 <p class="color-hint">
+                    Click tiles to set color &nbsp;·&nbsp;
+                    <span class="swatch green-swatch"></span> green &nbsp;
+                    <span class="swatch yellow-swatch"></span> yellow &nbsp;
+                    <span class="swatch gray-swatch"></span> gray
+                 </p>
+               </div>
+
+               <!-- On screen keyboard -->
+                <div class="keyboard" id="keyboard">
+                    <div class="key-row" id="kr-0"></div>
+                    <div class="key-row" id="kr-1"></div>
+                    <div class="key-row" id="kr-2"></div>
+                </div>
+
+         </section>
+
+         <!-- Right Column: recommendations + chart -->
+          <section class="col col-right">
+
+            <!-- Recommendations card -->
+             <div class="card" id="rec-card">
+                <div class="card-head">
+                    <h2 class="card-title">Best Next Guesses</h2>
+                    <span id="scoring-pill" class="pill pill-sm"></span>
+                </div>
+                <div id="rec-body" class="rec-body">
+                    <div class="spinner-wrap">
+                        <span class="spinner"></span>
+                        <span class="spinner-label">Loading word list...</span>
+                    </div>
+                </div>
+                <div class="rec-legend" id="rec-legend"></div>
+             </div>
+
+             <!-- Letter frequency chart card -->
+              <div class="card" id="chard-card">
+                <div class="card-head">
+                    <h2 class="card-title">Letter Coverage</h2>
+                    <span class="card-meta">% of remaining words containing each letter</span>
+                </div>
+                <div id="freq-chart" class="freq-chart"></div>
+              </div>
+
+          </section>
+     </main>
+
+     <!-- Solved overlay -->
+      <div id="solved-overlay" class="solved-overlay hidden">
+        <div class="solved-box">
+            <div class="solved-emoji">🎉</div>
+            <div class="solved-title">Solved!</div>
+            <div class="solved-sub" id="solved-sub"></div>
+            <button class="btn-primary" id="solved-reset-btn">Start new Wordle</button>
+        </div>
+      </div>
+
+      <script src="Solver.js"></script>
+      <script src="App.js"></script>
+</body>
 </html>
