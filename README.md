@@ -1,3 +1,1 @@
 # Wordle-Solver-Website
-
-helloooo
