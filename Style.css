@@ -761,3 +761,29 @@ main {
     border-color: #e57373;
     box-shadow: 0 0 0 3px rgba(229, 115, 115, 0.2);
 }
+/* Solved overlay close button */
+.solved-box {
+    position: relative;
+}
+.solved-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    line-height: 1;
+}
+.solved-close:hover {
+    border-color: var(--text-dim);
+    color: var(--text);
+}

@@ -79,6 +79,10 @@ function bindEvents() {
             .addEventListener('click', resetGame);
     document.getElementById('solved-reset-btn')
             .addEventListener('click', resetGame);
+    document.getElementById('solved-close-btn')
+            .addEventListener('click', () => {
+                document.getElementById('solved-overlay').classList.add('hidden');
+            });
     document.getElementById('only-possible-btn')
             .addEventListener('click', toggleOnlyPossible);
     document.getElementById('training-mode-btn')
@@ -249,8 +253,17 @@ function computeTrainingRating(idx, onDone) {
             for (const h of ratingHistory) ratingSolver.applyGuess(h.word, h.result);
 
             const userScore = ratingSolver.scoreWord(entry.word);
-            const topRecs = ratingSolver.getRecommendations(3, false);
-            const rating = buildRating(entry.word, userScore, entry.remainingBefore);
+            const topRecs   = ratingSolver.getRecommendations(3, false);
+
+            // Compute entropy of the best available guess so we can normalise against it
+            // rather than the theoretical log(R) ceiling, which no real guess can reach
+            let bestEntropy = null;
+            if (topRecs.length > 0) {
+                const bestScore = ratingSolver.scoreWord(topRecs[0].word);
+                if (bestScore) bestEntropy = bestScore.entropy;
+            }
+
+            const rating = buildRating(entry.word, userScore, entry.remainingBefore, bestEntropy);
 
             state.guessRatings[idx] = { ...entry, rating, bestRecs: topRecs };
 
@@ -265,34 +278,49 @@ function computeTrainingRating(idx, onDone) {
     }, 20);
 }
 
-function buildRating(word, score, remaining) {
+function buildRating(word, score, remaining, bestEntropy = null) {
     if (remaining === 1) {
-        return { quality: 1.0, label: 'Only Option', stars: 3, colorClass: 'rating-green',
-                    detail: 'Only one candidate remained.' };
+    const guessedCorrectly = score && score.isPossible;
+    if (!guessedCorrectly) {
+        return { quality: 0, label: 'Missed!', stars: 0, colorClass: 'rating-red',
+                    detail: 'Only one candidate remained — you should have guessed it.' };
     }
+    return { quality: 1.0, label: 'Only Option', stars: 3, colorClass: 'rating-green',
+                detail: 'Only one candidate remained — correct!' };
+}
     if (!score) {
         return { quality: null, label: 'Unknown Word', stars: 0, colorClass: 'rating-muted',
-                    detail: 'Word not in dictionary - no rating.' };
+                    detail: 'Word not in dictionary — no rating.' };
     }
     if (remaining === 2) {
         return { quality: score.entropy / Math.log(2), label: 'Coin Flip', stars: 2,
                     colorClass: 'rating-yellow', entropy: score.entropy,
                     maxEntropy: Math.log(2), isPossible: score.isPossible,
-                    detail: 'Only 2 candidates - either is a 50/50.' };
+                    detail: 'Only 2 candidates — either is a 50/50.' };
     }
 
-    const maxEntropy = Math.log(remaining);
-    const quality = score.entropy / maxEntropy;
+    // Normalise against the best achievable entropy, not log(R).
+    // log(R) is unachievable in practice (only 243 patterns exist),
+    // so good openers were scoring as Weak. Comparing against the
+    // actual best available guess gives fair, meaningful ratings.
+    const normalizer = (bestEntropy && bestEntropy > 0)
+        ? bestEntropy
+        : Math.log(remaining);
+
+    const quality = Math.min(1, score.entropy / normalizer);
+
     let label, stars, colorClass;
-    if      (quality >= 0.90) { label = 'Optimal';  stars = 3; colorClass = 'rating-green';  }
-    else if (quality >= 0.72) { label = 'Strong';   stars = 3; colorClass = 'rating-green';  }
-    else if (quality >= 0.55) { label = 'Good';     stars = 2; colorClass = 'rating-yellow'; }
-    else if (quality >= 0.35) { label = 'Weak';     stars = 1; colorClass = 'rating-orange'; }
+    if      (quality >= 0.97) { label = 'Best';     stars = 3; colorClass = 'rating-green';  }
+    else if (quality >= 0.90) { label = 'Strong';   stars = 3; colorClass = 'rating-green';  }
+    else if (quality >= 0.78) { label = 'Good';     stars = 2; colorClass = 'rating-yellow'; }
+    else if (quality >= 0.60) { label = 'Weak';     stars = 1; colorClass = 'rating-orange'; }
     else                      { label = 'Poor';     stars = 0; colorClass = 'rating-red';    }
 
+    const pct = Math.round(quality * 100);
+    const detail = `${pct}% of optimal · ${score.entropy.toFixed(2)} / ${normalizer.toFixed(2)} nats`;
+
     return { quality, label, stars, colorClass, isPossible: score.isPossible,
-                entropy: score.entropy, maxEntropy,
-                detail: `${Math.round(quality * 100)}% of max entropy` };
+                entropy: score.entropy, maxEntropy: normalizer, detail };
 }
 
 // Compute Recommendations
