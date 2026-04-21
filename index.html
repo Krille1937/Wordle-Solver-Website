@@ -28,7 +28,11 @@
                     </span>
                 </div>
             </div>
-            <button id="reset-btn" class="btn-ghost">↺ New Wordle</button>
+            <div>
+                <button id="only-possible-btn" class="btn-toggle" title="Show only words still possible as the answer">★ Only Possible</button>
+                <button id="training-mode-btn" class="btn-toggle" title="Train your Wordle skills - no hints shown">🎯 Training</button>
+                <button id="reset-btn" class="btn-ghost">↺ New Wordle</button>
+            </div>
         </div>
     </header>
 
@@ -62,24 +66,39 @@
                     <button id="submit-btn" class="btn-primary" disabled>Enter</button>
                 </div>
 
-                <!-- Clickable color tiles -->
-                 <div class="color-tiles" id="color-tiles">
-                    <div class="ctile" data-pos="0" data-color="X"></div>
-                    <div class="ctile" data-pos="1" data-color="X"></div>
-                    <div class="ctile" data-pos="2" data-color="X"></div>
-                    <div class="ctile" data-pos="3" data-color="X"></div>
-                    <div class="ctile" data-pos="4" data-color="X"></div>
-                 </div>
+                <!-- Color input tiles -->
+                <div id="color-input-section">
+                    <div class="color-tiles" id="color-tiles">
+                        <div class="ctile-wrap">
+                            <div class="ctile" data-pos="0" data-color="X"></div>
+                            <span class="ctile-label">gray</span>
+                        </div>
+                        <div class="ctile-wrap">
+                            <div class="ctile" data-pos="1" data-color="X"></div>
+                            <span class="ctile-label">gray</span>
+                        </div>
+                        <div class="ctile-wrap">
+                            <div class="ctile" data-pos="2" data-color="X"></div>
+                            <span class="ctile-label">gray</span>
+                        </div>
+                        <div class="ctile-wrap">
+                            <div class="ctile" data-pos="3" data-color="X"></div>
+                            <span class="ctile-label">gray</span>
+                        </div>
+                        <div class="ctile-wrap">
+                            <div class="ctile" data-pos="4" data-color="X"></div>
+                            <span class="ctile-label">gray</span>
+                        </div>
+                    </div>
+                    <p class="color-hint">Click any tile to cycle: gray → yellow → green</p>
+                </div>
 
-                 <p class="color-hint">
-                    Click tiles to set color &nbsp;·&nbsp;
-                    <span class="swatch green-swatch"></span> green &nbsp;
-                    <span class="swatch yellow-swatch"></span> yellow &nbsp;
-                    <span class="swatch gray-swatch"></span> gray
-                 </p>
+                <div id="training-input-hint" class="hidden training-input-hint">
+                    Type your guess and press Enter
+                </div>
                </div>
 
-               <!-- On screen keyboard -->
+                <!-- On screen keyboard -->
                 <div class="keyboard" id="keyboard">
                     <div class="key-row" id="kr-0"></div>
                     <div class="key-row" id="kr-1"></div>
@@ -87,34 +106,45 @@
                 </div>
 
          </section>
-
-         <!-- Right Column: recommendations + chart -->
+ 
+         <!-- Right Column -->
           <section class="col col-right">
-
-            <!-- Recommendations card -->
-             <div class="card" id="rec-card">
-                <div class="card-head">
-                    <h2 class="card-title">Best Next Guesses</h2>
-                    <span id="scoring-pill" class="pill pill-sm"></span>
-                </div>
-                <div id="rec-body" class="rec-body">
-                    <div class="spinner-wrap">
-                        <span class="spinner"></span>
-                        <span class="spinner-label">Loading word list...</span>
-                    </div>
-                </div>
-                <div class="rec-legend" id="rec-legend"></div>
-             </div>
-
-             <!-- Letter frequency chart card -->
-              <div class="card" id="chard-card">
-                <div class="card-head">
-                    <h2 class="card-title">Letter Coverage</h2>
-                    <span class="card-meta">% of remaining words containing each letter</span>
-                </div>
-                <div id="freq-chart" class="freq-chart"></div>
+ 
+            <!-- Solver mode -->
+            <div id="solver-right-col">
+              <div class="card" id="rec-card">
+                  <div class="card-head">
+                      <h2 class="card-title">Best Next Guesses</h2>
+                      <span id="scoring-pill" class="pill pill-sm"></span>
+                  </div>
+                  <div id="rec-body" class="rec-body">
+                      <div class="spinner-wrap">
+                          <span class="spinner"></span>
+                          <span class="spinner-label">Loading word list...</span>
+                      </div>
+                  </div>
+                  <div class="rec-legend" id="rec-legend"></div>
               </div>
-
+              <div class="card" id="chart-card">
+                  <div class="card-head">
+                      <h2 class="card-title">Letter Coverage</h2>
+                      <span class="card-meta">% of remaining words containing each letter</span>
+                  </div>
+                  <div id="freq-chart" class="freq-chart"></div>
+              </div>
+            </div>
+ 
+            <!-- Training mode panel -->
+            <div id="training-panel-wrap" class="hidden">
+              <div class="card training-card">
+                  <div class="card-head">
+                      <h2 class="card-title">🎯 Training</h2>
+                      <span class="card-meta">Guess quality · entropy analysis</span>
+                  </div>
+                  <div id="training-panel" class="training-panel"></div>
+              </div>
+            </div>
+ 
           </section>
      </main>
 

@@ -30,7 +30,7 @@
     --radius:       6px;
     --radius-lg:    12px;
     --radius-xl:    16px;
-    --tile:         88px;
+    --tile:         80px;
     --gap:          5px;
     --transition:   160ms ease;
 }
@@ -579,3 +579,169 @@ main {
     main { padding: 0.75rem; }
     .solved-box { padding: 2rem 1.5rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEW ADDITIONS — Training Mode + Toggle Buttons + Ctile redesign
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Utility ─────────────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ── Header Controls ─────────────────────────────────────────────────────── */
+.header-controls { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+
+/* ── Toggle Buttons ──────────────────────────────────────────────────────── */
+.btn-toggle {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 0.38rem 0.75rem;
+    border-radius: var(--radius);
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+.btn-toggle:hover { border-color: var(--text-muted); color: var(--text-dim); }
+.btn-toggle.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+#training-mode-btn.active { background: var(--green-glow); border-color: var(--green); color: var(--green); }
+
+/* ── Colour Tiles (full tile size with label) ────────────────────────────── */
+.color-tiles { display: flex; gap: var(--gap); justify-content: center; }
+.ctile-wrap  { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.ctile {
+    width: var(--tile); height: var(--tile);
+    border-radius: var(--radius); border: 2px solid var(--border);
+    background: var(--s3); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 1.4rem; font-weight: 800;
+    text-transform: uppercase; color: var(--text);
+    transition: border-color 120ms, background 120ms, transform 120ms, box-shadow 120ms;
+    user-select: none;
+}
+.ctile:hover { border-color: var(--text-dim); transform: translateY(-3px) scale(1.06); box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+.ctile:active { transform: translateY(0) scale(0.96); }
+.ctile[data-color="G"] { background: var(--green);  border-color: var(--green);  color: #fff; box-shadow: 0 0 16px var(--green-glow); }
+.ctile[data-color="Y"] { background: var(--yellow); border-color: var(--yellow); color: #fff; box-shadow: 0 0 16px var(--yellow-glow); }
+.ctile[data-color="X"] { background: var(--gray);   border-color: var(--gray);   color: var(--text-dim); box-shadow: none; }
+.ctile:not([data-letter]) { opacity: 0.25; pointer-events: none; }
+.ctile-label { font-family: var(--font-mono); font-size: 0.52rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); pointer-events: none; }
+.color-hint  { font-size: 0.7rem; color: var(--text-muted); text-align: center; }
+
+/* ── Training Input Hint ─────────────────────────────────────────────────── */
+.training-input-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 0.5rem 0;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--s3);
+}
+
+/* ── Training Card & Panel ───────────────────────────────────────────────── */
+.training-card  { min-height: 200px; }
+.training-panel { padding: 0; }
+
+/* Empty state */
+.training-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 3rem 1.5rem; text-align: center; gap: 0.75rem;
+}
+.training-empty-icon  { font-size: 2.5rem; line-height: 1; }
+.training-empty-title { font-weight: 700; font-size: 1rem; color: var(--text); }
+.training-empty-sub   { font-size: 0.82rem; color: var(--text-muted); max-width: 30ch; line-height: 1.6; }
+
+/* ── Training Entry ──────────────────────────────────────────────────────── */
+.training-history { display: flex; flex-direction: column; }
+
+.training-entry {
+    padding: 0.75rem 1rem 0.625rem;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex; flex-direction: column; gap: 0.35rem;
+}
+.training-entry:last-child { border-bottom: none; }
+
+.training-entry-top {
+    display: flex; align-items: center;
+    gap: 0.5rem; flex-wrap: wrap;
+}
+
+/* Mini guess number */
+.training-guess-num {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--text-muted); min-width: 14px;
+}
+
+/* ── Mini Tiles (show guess result in training panel) ────────────────────── */
+.mini-tile-row { display: flex; gap: 3px; }
+.mini-tile {
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 800;
+    text-transform: uppercase; color: #fff;
+    user-select: none;
+}
+.mini-tile.green  { background: var(--green); }
+.mini-tile.yellow { background: var(--yellow); }
+.mini-tile.gray   { background: var(--gray); color: var(--text-dim); }
+
+/* Rating display */
+.training-stars       { font-size: 0.9rem; letter-spacing: 0.05em; }
+.stars-filled         { color: var(--star); }
+.stars-empty          { color: var(--text-muted); opacity: 0.35; }
+.training-quality-pct { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); margin-left: auto; }
+.training-computing   { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--text-muted); margin-left: auto; }
+
+/* Label pills */
+.training-label {
+    font-size: 0.63rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 0.13rem 0.45rem; border-radius: 20px;
+}
+.rating-green  { background: var(--green-glow);          color: var(--green);   border: 1px solid rgba(76,175,110,0.3); }
+.rating-yellow { background: var(--yellow-glow);         color: var(--yellow);  border: 1px solid rgba(200,162,42,0.3); }
+.rating-orange { background: rgba(230,126,77,0.15);      color: #e67e4d;        border: 1px solid rgba(230,126,77,0.3); }
+.rating-red    { background: rgba(229,115,115,0.15);     color: #e57373;        border: 1px solid rgba(229,115,115,0.3); }
+.rating-muted  { background: var(--s3);                  color: var(--text-muted); border: 1px solid var(--border); }
+
+/* Detail + alternatives */
+.training-detail {
+    font-size: 0.7rem; color: var(--text-muted);
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    padding-left: 1.25rem;
+}
+.training-possible { color: var(--star); }
+.training-remaining { margin-left: auto; opacity: 0.55; font-variant-numeric: tabular-nums; }
+
+.training-better {
+    font-size: 0.7rem; color: var(--text-muted);
+    padding-left: 1.25rem;
+    display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+}
+.better-word { font-family: var(--font-mono); font-weight: 700; color: var(--text-dim); font-size: 0.72rem; }
+.better-pct  { font-family: var(--font-mono); font-size: 0.68rem; color: var(--accent); }
+.better-sep  { color: var(--text-muted); opacity: 0.4; }
+.optimal-note { color: var(--green); font-size: 0.7rem; padding-left: 1.25rem; }
+
+/* Overall strip */
+.training-overall {
+    display: flex; align-items: center; gap: 0.625rem;
+    padding: 0.625rem 1rem;
+    border-top: 1px solid var(--border);
+    background: rgba(255,255,255,0.018);
+}
+.training-overall-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.training-overall-pct   { margin-left: auto; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; color: var(--text-dim); }
+
+/* Game over reveal */
+.training-game-over {
+    padding: 1.25rem 1rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+}
+.game-over-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.game-over-word  { font-family: var(--font-mono); font-size: 2rem; font-weight: 800; letter-spacing: 0.15em; color: var(--text); }

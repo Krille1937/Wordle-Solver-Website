@@ -8,17 +8,18 @@
  *  - Frequency scoring   when remaining > ENTROPY_THRESHOLD   (0(N), instant)
  *  - Entropy scoring   when remaining ≤ ENTROPY_THRESHOLD   (O(N×R), ~200ms)
  * 
+ * @version 1.1.0
  * @author Kristoffer Oltegen Diehl
  */
 
 'use strict';
 
-const ENTROPY_THRESHOLD = 500; // When to switch from frequency to entropy scoring   (words left)
+const ENTROPY_THRESHOLD = 750; // When to switch from frequency to entropy scoring   (words left)
 
 class WordleSolver {
- 
+
   // ─── Constructor ───────────────────────────────────────────────────────────
- 
+
   constructor(words) {
     this.allWords = words;
     const n = words.length;
@@ -44,6 +45,9 @@ class WordleSolver {
     // Remaining candidate indices (compacted in-place — no reallocation)
     this.remainingIdx  = new Int32Array(Array.from({ length: n }, (_, i) => i));
     this.remainingSize = n;
+
+    // 0(1) word => index lookup (used by scoreWord for training mode)
+    this._wordIndexMap = new Map(words.map((w, i) => [w, i]));
  
     // ── Reusable scratch buffers (avoids allocations inside hot loops) ─────
     this._avail   = new Int32Array(26); // pattern computation
@@ -182,7 +186,7 @@ class WordleSolver {
    *   remaining > 500  →  frequency scoring  (instant)
    *   remaining ≤ 500  →  entropy scoring    (~100–300ms)
    */
-  getRecommendations(topN = 7) {
+  getRecommendations(topN = 7, onlyPossible = false) {
     if (this.remainingSize === 0) return [];
     if (this.remainingSize === 1) {
       return [{
@@ -196,8 +200,8 @@ class WordleSolver {
     }
  
     return this.remainingSize <= ENTROPY_THRESHOLD
-      ? this._scoreByEntropy(topN)
-      : this._scoreByFrequency(topN);
+      ? this._scoreByEntropy(topN, onlyPossible)
+      : this._scoreByFrequency(topN, onlyPossible);
   }
  
   /**
@@ -212,7 +216,7 @@ class WordleSolver {
    * Higher H = more information gained = fewer guesses needed on average.
    * Also computes expectedRemaining and worstCase for display.
    */
-  _scoreByEntropy(topN) {
+  _scoreByEntropy(topN, onlyPossible = false) {
     const R    = this.remainingSize;
     const logR = Math.log(R);
     const bk   = this._buckets;
@@ -220,10 +224,17 @@ class WordleSolver {
     // O(1) lookup for "is this word still a possible answer?"
     const isPossible = new Uint8Array(this.allWords.length);
     for (let ri = 0; ri < R; ri++) isPossible[this.remainingIdx[ri]] = 1;
+
+    // When onlyPossible=true, only score candidates from the remaining set.
+    // Also faster: O(R²) instead of O(N×R)
+    const pool = onlyPossible
+      ? Array.from({ length: R }, (_, i) => this.remainingIdx[i])
+      : Array.from({ length: this.allWords.length }, (_, i) => i);
+
+    const results = new Array(pool.length);
  
-    const results = new Array(this.allWords.length);
- 
-    for (let gi = 0; gi < this.allWords.length; gi++) {
+    for (let pi = 0; pi < pool.length; pi++) {
+      const gi = pool[pi]
       // Fill buckets for this guess vs all remaining candidates
       bk.fill(0);
       for (let ri = 0; ri < R; ri++) {
@@ -240,7 +251,7 @@ class WordleSolver {
         }
       }
  
-      results[gi] = {
+      results[pi] = {
         word:              this.allWords[gi],
         score:             entropy / R,
         expectedRemaining: expRem / R,
@@ -254,6 +265,12 @@ class WordleSolver {
     results.sort((a, b) =>
       b.score - a.score || (a.isPossible === b.isPossible ? 0 : a.isPossible ? -1 : 1)
     );
+
+    // Feature 1 fix: when candidates < topN, don't pad with non-possible words.
+    // Showing dictionary words below the 2-3 real options is noise, not signal.
+    if (!onlyPossible && this.remainingSize < topN) {
+      return results.filter(r => r.isPossible).slice(0, topN);
+    }
     return results.slice(0, topN);
   }
  
@@ -264,7 +281,7 @@ class WordleSolver {
    * score(word) = sum of freq[c] for each UNIQUE letter in the word.
    * (Duplicates in a guess test nothing extra, so they're not double-counted.)
    */
-  _scoreByFrequency(topN) {
+  _scoreByFrequency(topN, onlyPossible = false) {
     const freq = new Int32Array(26);
     for (let ri = 0; ri < this.remainingSize; ri++) {
       const lc = this.letterCounts[this.remainingIdx[ri]];
@@ -274,10 +291,15 @@ class WordleSolver {
     const isPossible = new Uint8Array(this.allWords.length);
     for (let ri = 0; ri < this.remainingSize; ri++) isPossible[this.remainingIdx[ri]] = 1;
  
-    const seen    = this._seen;
-    const results = new Array(this.allWords.length);
+    const seen = this._seen;
+    const pool = onlyPossible
+      ? Array.from({ length: this.remainingSize }, (_, i) => this.remainingIdx[i])
+      : Array.from({ length: this.allWords.length }, (_, i) => i);
+
+    const results = new Array(pool.length);
  
-    for (let i = 0; i < this.allWords.length; i++) {
+    for (let pi = 0; pi < pool.length; pi++) {
+      const i = pool[pi];
       const w = this.allWords[i];
       seen.fill(0);
       let score = 0;
@@ -285,12 +307,16 @@ class WordleSolver {
         const c = w.charCodeAt(p) - 97;
         if (!seen[c]) { seen[c] = 1; score += freq[c]; }
       }
-      results[i] = { word: w, score, isPossible: isPossible[i] === 1, mode: 'frequency' };
+      results[pi] = { word: w, score, isPossible: isPossible[i] === 1, mode: 'frequency' };
     }
  
     results.sort((a, b) =>
       b.score - a.score || (a.isPossible === b.isPossible ? 0 : a.isPossible ? -1 : 1)
     );
+
+    if (!onlyPossible && this.remainingSize < topN) {
+      return results.filter(r => r.isPossible).slice(0, topN);
+    }
     return results.slice(0, topN);
   }
  
@@ -341,12 +367,101 @@ class WordleSolver {
   get remainingCount() { return this.remainingSize; }
   get totalWords()     { return this.allWords.length; }
   get scoringMode()    { return this.remainingSize <= ENTROPY_THRESHOLD ? 'entropy' : 'frequency'; }
- 
+
+  /**
+   * Computes the Wordle result for a guess against a known answer.
+   * Returns a 5-element array of 'G' | 'Y' | 'X'.
+   * 
+   * Uses the same two-pass duplicate letter algorithm as _computePattern,
+   * but works directly with strings - no index lookup needed.
+   * 
+   * Used by training mode to simulate wordle feedback automatically.
+   */
+  computeResult(guessWord, answerWord) {
+    const result = ['X','X','X','X','X'];
+    const avail = new Int32Array(26);
+
+    // Count all letters in the answer
+    for (let i = 0; i < 5; i++) avail[answerWord.charCodeAt(i) - 97]++;
+
+    // Pass 1: Greens - exact matches consume an available slot
+    for (let i = 0; i < 5; i++) {
+      if (guessWord[i] === answerWord[i]) {
+        result[i] = 'G';
+        avail[guessWord.charCodeAt(i) - 97]--;
+      }
+    }
+
+    // Pass 2: Yellows - present but wrong position, only if slots remain
+    for (let i = 0; i < 5; i++) {
+      if (result[i] !== 'G') {
+        const c = guessWord.charCodeAt(i) - 97;
+        if (avail[c] > 0) { result[i] = 'Y'; avail[c]--; }
+      }
+    }
+
+    return result;
+  }
+
+
   getRemainingWords() {
     const out = [];
     for (let ri = 0; ri < this.remainingSize; ri++) {
       out.push(this.allWords[this.remainingIdx[ri]]);
     }
     return out;
+  }
+
+  /**
+   * Computes the entropy of ONE specific word against the current remaining candidates.
+   * O(R) - Fast enough to call inline during training mode rating.
+   * 
+   * Returns null if the word isn't in the dictionary.
+   * Returns { entropy, expectedRemaining, worstCase, isPossible } otherwise.
+   * 
+   * entropy is in nats. The theoretical maximum is Math.log(remainingSize).
+   * quality = entropy / Math.log(remainingSize)  gives a 0-1 score.
+   */
+  scoreWord(word) {
+    const idx = this._wordIndexMap.get(word);
+    if (idx === undefined) return null;
+
+    const R = this.remainingSize;
+    if (R === 0) return null;
+    if (R === 1) {
+      return { entropy: 0, expectedRemaining: 1, worstCase: 1,
+                isPossible: this.remainingIdx[0] === idx };
+    }
+
+    const logR = Math.log(R);
+    const bk = this._buckets;
+    bk.fill(0);
+
+    for (let ri = 0; ri < R; ri++) {
+      bk[this._computePattern(idx, this.remainingIdx[ri])]++;
+    }
+
+    let entropy = 0, expRem = 0, worst = 0;
+    for (let b = 0; b < 243; b++) {
+      const c = bk[b];
+      if (c > 0) {
+        entropy += c *(logR - Math.log(c));
+        expRem += c * c;
+        if (c > worst) worst = c;
+      }
+    }
+
+    // Check if this word is still a possible answer
+    let isPossible = false;
+    for (let ri = 0; ri < R; ri++) {
+      if (this.remainingIdx[ri] === idx) { isPossible = true; break; }
+    }
+
+    return {
+      entropy: entropy / R,
+      expectedRemaining: expRem / R,
+      worstCase: worst,
+      isPossible
+    };
   }
 }
