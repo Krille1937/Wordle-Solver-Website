@@ -10,7 +10,7 @@
  * 
  * Requires: Solver.js loaded first (provides WordleSolver class)
  * 
- * @version 1.1.3
+ * @version 2.0.0
  * @author: Kristoffer Oltegen Diehl
  */
 
