@@ -177,6 +177,21 @@ function submitSolverGuess(word) {
 }
 
 function submitTrainingGuess(word) {
+
+    if (!words.includes(word)) {
+        const input = document.getElementById('guess-input');
+        input.classList.remove('shake');
+        void input.offsetWidth;
+        input.classList.add('shake');
+        document.getElementById('training-input-hint').textContent =
+            `"${word.toUpperCase()}" is not in the word list`;
+        setTimeout(() => {
+            document.getElementById('training-input-hint').textContent =
+                'Type your guess and press Enter';
+        }, 2000);
+        return;
+    }
+
     // Autocompute result against the secret word
     const result = solver.computeResult(word, state.secretWord);
     const remainingBefore = solver.remainingCount;
