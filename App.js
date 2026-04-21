@@ -569,7 +569,7 @@ function renderTrainingPanel(computing) {
  
             // Better alternatives (skip for coin-flip, only-option, unknown)
             const showAlt = bestRecs && bestRecs.length > 0 && rating.quality !== null
-                         && !['Coin Flip', 'Only Option', 'Unknown Word'].includes(rating.label);
+                && !['Coin Flip', 'Only Option', 'Missed!', 'Unknown Word'].includes(rating.label);
  
             if (showAlt) {
                 const userIsTop  = bestRecs[0].word === word;
