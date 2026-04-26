@@ -14,7 +14,7 @@
 
 'use strict';
 
-const ENTROPY_THRESHOLD = 750; // When to switch from frequency to entropy scoring   (words left)
+const ENTROPY_THRESHOLD = 3750; // When to switch from frequency to entropy scoring   (words left)
 
 class WordleSolver {
 
